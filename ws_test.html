@@ -3,27 +3,245 @@
     <head>
         <title>WebSocket demo</title>
     </head>
+    <style>
+      @keyframes fadein {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      html {
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        background: #373740;
+        height: 100%;
+        overflow: hidden;
+        font-family: Helvetica, sans-serif;
+      }
+      body.awake {
+        background: #EEEEEE;
+      }
+      .character {
+        width: 400px;
+        height: 200px;
+        background: #cecece;
+        border-radius: 100px;
+        margin: 0 auto;
+        position: sticky;
+        top: 40%;
+        transform: translateY(-50%);
+        opacity: 0.5;
+        transition: opacity 2s;
+      }
+      .fic {
+        background: #2d9bf0;
+        width: 400px;
+      }
+      .tio {
+        background: #ffde70;
+        opacity: 0;
+        width: 250px;
+      }
+      .neers {
+        background: #f24827;
+        width: 600px;
+      }
+      .awake {
+        opacity: 1;
+      }
+      .character.error {
+        background: black !important;
+      }
+      .eyes {
+        margin: 0 auto;
+        width: 100%;
+        max-width: 400px;
+        display: flex;
+        justify-content: space-evenly;
+        transition: all 1s;
+        height: 100%;
+      }
+      .eyelid {
+        position: relative;
+        top: 50px;
+        transition: all 1s;
+        height: 10px;
+        overflow: hidden;
+      }
+      .eye {
+        background: white;
+        width: 100px;
+        height: 100px;
+        border-radius: 100%;
+        transform: translateY(-30px);
+        transition: all 2s;
+      }
+      .eyes.normal .eye {
+        transform: translateY(0px);
+      }
+      .eyes.normal .eyelid{
+        height: 100px;
+      }
+      .subtitles {
+        position: absolute;
+        bottom: 10px;
+        width: 100%;
+        height: 250px;
+        color: white;
+        font-size: 75px;
+        padding: 25px 0;
+        text-align: left;
+      }
+      .subtitles span {
+        animation: fadein 1s
+      }
+      .eyes.happy .eyelid {
+        transform: translateY(-10px);
+        height: 50px;
+        overflow: hidden;
+      }
+      .eyes.happy .eye {
+        transform: translateY(0);
+      }
+      .eyes.sad .eyelid {
+        transform: translateY(-10px);
+        top: 125px;
+        overflow: hidden;
+        height: 50px;
+      }
+      .eyes.sad .eye {
+        transform: translateY(-50px);
+      }
+      .eyes.sad .left-eyelid {
+        transform: translateY(-50px) rotate(-10deg);
+      }
+      .eyes.sad .right-eyelid {
+        transform: translateY(-50px) rotate(10deg);
+      }
+      .text-fic {
+        color: #2d9bf0
+      }
+      .text-tio {
+        color: #ffde70
+      }
+      .text-neers {
+        color: #f24827
+      }
+
+    </style>
     <body>
+      <div class="character fic error" id="character">
+        <div id="eyes" class="eyes">
+          <div class="eyelid left-eyelid">
+            <div class="eye left-eye"></div>
+          </div>
+          <div class="eyelid right-eyelid">
+            <div class="eye right-eye"></div>
+          </div>
+        </div>
+      </div>
+      <div class="subtitles" id="subtitles">
+      </div>
         <script>
-            var ws = new WebSocket("ws://127.0.0.1:5678/"),
-                messages = document.createElement('ul');
-            ws.onmessage = function (event) {
-                var messages = document.getElementsByTagName('ul')[0],
-                    message = document.createElement('li'),
-                    content = document.createTextNode(event.data);
-                message.appendChild(content);
-                messages.appendChild(message);
-            };
-            ws.onclose = function (event) {
-              console.log('ws closed');
+
+            let script_interval = 0;
+            let text_interval = 0;
+
+            function animate_in_text(text, time) {
+              setTimeout(() => {
+                let span = document.createElement('span');
+                let textNode = document.createTextNode(` ${text[text_interval]}`);
+
+                let test_string = text[text_interval]
+                  ? text[text_interval].replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '')
+                  : '';
+
+                if (test_string === 'Fic', 'Tio', 'Neers') {
+                  span.classList.add(`text-${test_string.toLowerCase()}`);
+                  span.appendChild(textNode);
+                }
+
+                document.getElementById('subtitles').appendChild(span);
+                text_interval++;
+
+                if (text_interval < text.length) {
+                  animate_in_text(text, time);
+                }
+
+              }, (time/2)/text.length);
             }
-            ws.onopen = function (event) {
-              console.log('ws open');
+
+            function add_subtitles(text, time) {
+              text_interval = 0;
+              animate_in_text(text.split(' '), time);
             }
-            function send_message() {
-              ws.send('aaaa');
+
+            function run_script(script) {
+              setTimeout(() => {
+
+                document.getElementById('subtitles').innerHTML = '';
+                add_subtitles(script[script_interval].text, script[script_interval].length * 1000);
+
+                if (script_interval !== 0) {
+                  document.getElementById('eyes').classList.remove(script[script_interval - 1].expression);
+                }
+                document.getElementById('eyes').classList.add(script[script_interval].expression);
+
+                if (script_interval < script.length - 1) {
+                  script_interval++;
+                  run_script(script);
+                } else {
+                  console.log('Script completed.');
+                  setTimeout(() => {
+                    document.getElementById('character').classList.remove('awake');
+                  }, 5000);
+
+                  setTimeout(() => {
+                    document.getElementById('eyes').classList.remove(script[script.length -1].expression);
+                    document.getElementById('subtitles').innerHTML = '';
+                  }, script[script_interval].length * 1000);
+                  script_interval = 0;
+                }
+
+              }, script_interval !== 0 ? script[script_interval - 1].length * 1000 : 0);
             }
-            document.body.appendChild(messages);
+
+            function connect() {
+              var ws = new WebSocket("ws://127.0.0.1:5678/");
+              ws.onmessage = function (event) {
+
+                  const data = JSON.parse(event.data);
+                  const script = data;
+
+                  if (script[0].expression !== 'sleeping') {
+                    document.getElementById('character').classList.add('awake');
+                  }
+
+                  run_script(script);
+              };
+              ws.onclose = function (event) {
+                console.log('ws closed');
+                if (!document.getElementById('character').classList.contains('error')) {
+                  document.getElementById('character').classList.add('error');
+                }
+
+                console.log('Socket is closed. Reconnect will be attempted in 1 second.', event.reason);
+                setTimeout(function() {
+                  connect();
+                }, 1000);
+              }
+              ws.onopen = function (event) {
+                console.log('ws open');
+                document.getElementById('character').classList.remove('error');
+              }
+
+              ws.onerror = function(err) {
+                console.error('Socket encountered error: ', err.message, 'Closing socket');
+                ws.close();
+              };
+            }
+
+            connect();
         </script>
     </body>
 </html>

@@ -2,46 +2,135 @@
 
 import asyncio
 import websockets
+import requests
+import json
+import contentful
+import time
 
-connected = set()
+client = contentful.Client(
+  '',  # This is the space ID. A space is like a project folder in Contentful terms
+  ''  # This is the access token for this space. Normally you get both ID and the token in the Contentful web app
+)
 
-async def handler(websocket, path):
-    global connected
-    # Register.
-    connected.add(websocket)
-    try:
-        while True:
-            id = await websocket.recv()
+# Mocked user ID
+id = 'aaaaaaaaa3'
 
-            # Test code for the socket
-            print("< {}".format(id))
-            greeting = "Hello {}!".format(id)
-            await asyncio.wait([ws.send(greeting) for ws in connected])
+character = 'fic'
+# character = 'tio'
+# character = 'neers'
+# character = 'end'
+
+async def main(websocket, path):
+  while True:
+    # TODO: Replace with RFID reader.
+    input('input pls')
+    # Mocked user ID
+    id = '0011'
+
+    # Get a  token for the given user.
+    token_headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization' : ''
+    }
+    token_body = {"user_id": id}
+    token_response = requests.post('https://api.fictioneers.co.uk/api/v1/auth/token' , headers=token_headers, data=json.dumps(token_body))
+    token = token_response.json()['id_token']
+    print('========token')
+    print(token_response)
+    print(token_response.json())
+
+    # Try and get a user for the given {id}
+    user_response = requests.get(f'https://api.fictioneers.co.uk/api/v1/users/me', params={'include_narrative_state': True}, headers={'Authorization' : f'Bearer {token}'})
+    print('========Try and get a user')
+    print(user_response)
+    print(user_response.json())
+
+    # If no user,
+    if user_response.status_code == 403:
+      # make one! and get their story state
+      create_user_body = {
+        "published_timeline_id": "rT5vuTQvGBudLRqe0lZ4",
+        "timezone": "Europe/London",
+        "disable_time_guards": False,
+        "pause_at_beats": False
+      }
+      create_user_response = requests.post(f'https://api.fictioneers.co.uk/api/v1/users/' , headers={'Authorization' : f'Bearer {token}'}, data=json.dumps(create_user_body))
+      print('======== 403')
+      user_story_state = create_user_response.json()['data']['narrative_state']
 
 
-            # Try and get a user for the given {id}
+    else:
+      # Using the story state,
+      print('======== pass')
+      print(user_response)
+      print(user_response.json())
+      user_story_state = user_response.json()['data']['narrative_state']
 
-            # If no user,
-              # make one! and get their story state
 
-            # Using the story state,
-            # determine if the user is in the correct beat to progress
+    print('========')
+    print(user_story_state);
+    current_beat_id = user_story_state['current_beat']['id']
 
-            # If we can progress
-              # send a request progressing the story
-              # Get the hook ID
-              # Match the hook ID with the content
-              # return the content via the socket
+    # determine if the user is in the correct beat to progress
+    beats = {
+      "fic": ['x0HkthOzIo2ThOiTM3zu'],
+      "tio": ['eiBtt7JiCvryJc0EaL7m', 'mRXTWvwNjk1IPyQhlB8r'],
+      "neers": ['qGXCLk7Brh1tbA4J6TIi'],
+      "end": ['bE84ZDGlQ5k6LyDUFoGQ'],
+    }
 
-            # If we cannot progress
-              # Find the error message for this character per the users beat
-              # Send this message to the socket.
 
-    finally:
-        # Unregister.
-        connected.remove(websocket)
+    if current_beat_id in beats[character]:
+      print('were with the right character')
 
-start_server = websockets.serve(handler, '127.0.0.1', 5678)
+
+      # send a request progressing the story
+      # /api/v1/user-story-state/progress-events
+      progress_story_body = {
+        "max_steps": 1,
+        "pause_at_beats": False
+      }
+
+      progress_story_response = requests.post(f'https://api.fictioneers.co.uk/api/v1/user-story-state/progress-events' , headers={'Authorization' : f'Bearer {token}'}, data=json.dumps(progress_story_body))
+      print('========')
+      print('progressed story')
+      print(progress_story_response.json())
+      # Get the content ID
+      # new_content_id = progress_story_response['meta']['upserted_event_hooks'][0]['content_integrations'][0]['content_id']
+      upserted_hooks = progress_story_response.json()['meta']['upserted_event_hooks']
+      print(upserted_hooks)
+      content_integrations = upserted_hooks[0]['content_integrations']
+      print(content_integrations)
+      content_id = content_integrations[0]['content_id']
+      print(content_integrations)
+      # new_content_id = '1hKQPk0TnyeWrUd1BN9jUd'
+      entry = client.entry(content_id)
+      script = entry.script
+
+      print('========')
+      print('content')
+      print(script)
+
+    else:
+      # If we cannot progress
+      print('wrong character!')
+
+      # Find the error message for this character per the users beat
+      script = [
+        {
+          "length": 8,
+          "text": "Zzz... Zzz... Zzz...",
+          "expression": "sleeping"
+        }
+      ]
+
+
+    await websocket.send(json.dumps(script))
+    time.sleep(10)
+  #END WHILE
+
+start_server = websockets.serve(main, '127.0.0.1', 5678)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
