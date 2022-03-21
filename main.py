@@ -6,17 +6,18 @@ import requests
 import json
 import contentful
 import time
+import cups
 
 client = contentful.Client(
-  '',  # This is the space ID. A space is like a project folder in Contentful terms
-  ''  # This is the access token for this space. Normally you get both ID and the token in the Contentful web app
+  '0got9kbaqo5d',  # This is the space ID. A space is like a project folder in Contentful terms
+  'pRt-hmb1QffZQXfOQpLKrw9kzK8Z342aQeWtaVoAQ3o'  # This is the access token for this space. Normally you get both ID and the token in the Contentful web app
 )
 
 # Mocked user ID
-id = 'aaaaaaaaa3'
+id = 'testing123'
 
-character = 'fic'
-# character = 'tio'
+# character = 'fic'
+character = 'tio'
 # character = 'neers'
 # character = 'end'
 
@@ -25,13 +26,13 @@ async def main(websocket, path):
     # TODO: Replace with RFID reader.
     input('input pls')
     # Mocked user ID
-    id = '0011'
+    id = 't1'
 
     # Get a  token for the given user.
     token_headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization' : ''
+      'Authorization' : 's_84adbe13806cfc63.Rwq7EJWRymjtd_WOIHznF6Q8ZUZ2XQ_ETsPecK4MpJs'
     }
     token_body = {"user_id": id}
     token_response = requests.post('https://api.fictioneers.co.uk/api/v1/auth/token' , headers=token_headers, data=json.dumps(token_body))
@@ -83,6 +84,13 @@ async def main(websocket, path):
 
     if current_beat_id in beats[character]:
       print('were with the right character')
+
+      if current_beat_id == 'eiBtt7JiCvryJc0EaL7m':
+        print('we should print here!')
+        conn = cups.Connection()
+        printers = conn.getPrinters()
+        printer_name = printers.keys()[0]
+        conn.printFile(printer_name,'/home/pi/office-tour-hackathon/print.pdf',"",{})
 
 
       # send a request progressing the story
