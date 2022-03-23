@@ -7,31 +7,42 @@ import json
 import contentful
 import time
 
+import RPi.GPIO as GPIO
+
+from mfrc522 import SimpleMFRC522
+
+reader = SimpleMFRC522()
+
 client = contentful.Client(
-  '',  # This is the space ID. A space is like a project folder in Contentful terms
-  ''  # This is the access token for this space. Normally you get both ID and the token in the Contentful web app
+  '0got9kbaqo5d',  # This is the space ID. A space is like a project folder in Contentful terms
+  'pRt-hmb1QffZQXfOQpLKrw9kzK8Z342aQeWtaVoAQ3o'  # This is the access token for this space. Normally you get both ID and the token in the Contentful web app
 )
 
 # Mocked user ID
 id = 'aaaaaaaaa3'
 
-character = 'fic'
-# character = 'tio'
+# character = 'fic'
+character = 'tio'
 # character = 'neers'
 # character = 'end'
 
 async def main(websocket, path):
   while True:
     # TODO: Replace with RFID reader.
-    input('input pls')
+    print('input pls')
+    id, text = reader.read()
+    print(id)
+    print(text)
+
     # Mocked user ID
-    id = '0011'
+    id = str(id) + '123'
+    await websocket.send('wake')
 
     # Get a  token for the given user.
     token_headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization' : ''
+      'Authorization' : 's_84adbe13806cfc63.Rwq7EJWRymjtd_WOIHznF6Q8ZUZ2XQ_ETsPecK4MpJs'
     }
     token_body = {"user_id": id}
     token_response = requests.post('https://api.fictioneers.co.uk/api/v1/auth/token' , headers=token_headers, data=json.dumps(token_body))
@@ -115,6 +126,7 @@ async def main(websocket, path):
     else:
       # If we cannot progress
       print('wrong character!')
+      await websocket.send('sleep')
 
       # Find the error message for this character per the users beat
       script = [
