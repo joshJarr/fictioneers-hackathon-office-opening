@@ -6,7 +6,10 @@ import requests
 import json
 import contentful
 import time
-import cups
+
+import RPi.GPIO as GPIO
+from mfrc522 import SimpleMFRC522
+# import cups
 
 client = contentful.Client(
   '0got9kbaqo5d',  # This is the space ID. A space is like a project folder in Contentful terms
@@ -21,12 +24,21 @@ character = 'tio'
 # character = 'neers'
 # character = 'end'
 
+reader = SimpleMFRC522()
+
 async def main(websocket, path):
   while True:
+
+
     # TODO: Replace with RFID reader.
     input('input pls')
+
+    id, text = reader.read()
+    print(id)
+    print(text)
     # Mocked user ID
-    id = 't1'
+    id = id + '123'
+
 
     # Get a  token for the given user.
     token_headers = {
@@ -87,10 +99,10 @@ async def main(websocket, path):
 
       if current_beat_id == 'eiBtt7JiCvryJc0EaL7m':
         print('we should print here!')
-        conn = cups.Connection()
-        printers = conn.getPrinters()
-        printer_name = printers.keys()[0]
-        conn.printFile(printer_name,'/home/pi/office-tour-hackathon/print.pdf',"",{})
+        # conn = cups.Connection()
+        # printers = conn.getPrinters()
+        # printer_name = printers.keys()[0]
+        # conn.printFile(printer_name,'/home/pi/office-tour-hackathon/print.pdf',"",{})
 
 
       # send a request progressing the story
