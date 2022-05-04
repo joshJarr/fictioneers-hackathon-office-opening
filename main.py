@@ -8,8 +8,15 @@ import contentful
 import time
 
 import RPi.GPIO as GPIO
+<<<<<<< HEAD
 from mfrc522 import SimpleMFRC522
 # import cups
+=======
+
+from mfrc522 import SimpleMFRC522
+
+reader = SimpleMFRC522()
+>>>>>>> 255a6a1db2e5e90e85cf9e312db1d498285ef914
 
 client = contentful.Client(
   '0got9kbaqo5d',  # This is the space ID. A space is like a project folder in Contentful terms
@@ -31,6 +38,7 @@ async def main(websocket, path):
 
 
     # TODO: Replace with RFID reader.
+<<<<<<< HEAD
     input('input pls')
 
     id, text = reader.read()
@@ -39,6 +47,16 @@ async def main(websocket, path):
     # Mocked user ID
     id = id + '123'
 
+=======
+    print('input pls')
+    id, text = reader.read()
+    print(id)
+    print(text)
+
+    # Mocked user ID
+    id = str(id) + '123'
+    await websocket.send('wake')
+>>>>>>> 255a6a1db2e5e90e85cf9e312db1d498285ef914
 
     # Get a  token for the given user.
     token_headers = {
@@ -135,6 +153,7 @@ async def main(websocket, path):
     else:
       # If we cannot progress
       print('wrong character!')
+      await websocket.send('sleep')
 
       # Find the error message for this character per the users beat
       script = [

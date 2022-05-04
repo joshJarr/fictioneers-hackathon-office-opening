@@ -17,9 +17,13 @@
         height: 100%;
         overflow: hidden;
         font-family: Helvetica, sans-serif;
+        transition: all 1s;
       }
       body.awake {
         background: #EEEEEE;
+      }
+      body.light {
+        background: #CECECE;
       }
       .character {
         width: 400px;
@@ -129,8 +133,8 @@
       }
 
     </style>
-    <body>
-      <div class="character fic error" id="character">
+    <body id="background">
+      <div class="character tio error" id="character">
         <div id="eyes" class="eyes">
           <div class="eyelid left-eyelid">
             <div class="eye left-eye"></div>
@@ -194,6 +198,8 @@
                   console.log('Script completed.');
                   setTimeout(() => {
                     document.getElementById('character').classList.remove('awake');
+                    document.getElementById('background').classList.remove('light');
+
                   }, 5000);
 
                   setTimeout(() => {
@@ -209,6 +215,14 @@
             function connect() {
               var ws = new WebSocket("ws://127.0.0.1:5678/");
               ws.onmessage = function (event) {
+		  if (event.data == 'wake') {
+                    document.getElementById('background').classList.add('light');
+                    return;                    
+                  }
+                  if (event.data == 'sleep') {
+                    document.getElementById('background').classList.remove('light');
+                    return;
+                  }
 
                   const data = JSON.parse(event.data);
                   const script = data;
